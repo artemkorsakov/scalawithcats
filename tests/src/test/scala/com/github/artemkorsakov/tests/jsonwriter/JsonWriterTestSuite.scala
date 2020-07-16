@@ -1,13 +1,26 @@
 package com.github.artemkorsakov.tests.jsonwriter
 
+import com.github.artemkorsakov.jsonwriter.JsonSyntax._
 import com.github.artemkorsakov.jsonwriter.JsonWriterInstances._
-import com.github.artemkorsakov.jsonwriter.{Json, Person}
+import com.github.artemkorsakov.jsonwriter._
 import org.scalatest.Matchers
 import org.scalatest.funsuite.AnyFunSuiteLike
 
 class JsonWriterTestSuite extends AnyFunSuiteLike with Matchers {
-  test("test") {
-    println(Json.toJson(Person("Dave", "dave@example.com")))
-    1 shouldBe 1
+  test("test JsonWriterInstances") {
+    val person1 = Json.toJson(Person("Dave", "dave@example.com"))
+    person1 shouldBe JsObject(Map(
+      "name" -> JsString("Dave"),
+      "email" -> JsString("dave@example.com")
+    ))
+
+    val person2 = Person("Dave", "dave@example.com").toJson
+    person2 shouldBe JsObject(Map(
+      "name" -> JsString("Dave"),
+      "email" -> JsString("dave@example.com")
+    ))
+
+    println(implicitly[JsonWriter[String]])
+    println(implicitly[JsonWriter[Person]])
   }
 }
