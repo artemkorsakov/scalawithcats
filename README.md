@@ -1,2 +1,2 @@
 # scalawithcats
-My scalawithcats training repository
+My <a href='https://www.scalawithcats.com/'>scalawithcats</a> training repository
