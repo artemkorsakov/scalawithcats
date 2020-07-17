@@ -8,6 +8,12 @@ import org.scalatest.funsuite.AnyFunSuiteLike
 
 class JsonWriterTestSuite extends AnyFunSuiteLike with Matchers {
   test("test JsonWriterInstances") {
+    val str1 = Json.toJson("Dave")
+    str1 shouldBe JsString("Dave")
+
+    val str2 = "Dave".toJson
+    str2 shouldBe JsString("Dave")
+
     val person1 = Json.toJson(Person("Dave", "dave@example.com"))
     person1 shouldBe JsObject(Map(
       "name" -> JsString("Dave"),
