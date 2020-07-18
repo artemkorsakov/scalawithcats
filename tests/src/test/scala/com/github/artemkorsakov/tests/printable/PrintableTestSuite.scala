@@ -1,5 +1,6 @@
 package com.github.artemkorsakov.tests.printable
 
+import com.github.artemkorsakov.cats.Cat
 import com.github.artemkorsakov.printable.PrintableInstances._
 import com.github.artemkorsakov.printable.PrintableSyntax._
 import com.github.artemkorsakov.printable._
