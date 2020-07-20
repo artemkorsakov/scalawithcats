@@ -22,22 +22,19 @@ class JsonWriterTestSuite extends AnyFunSuiteLike with Matchers {
     str4 shouldBe JsNull
 
     val person1 = Json.toJson(Person("Dave", "dave@example.com"))
-    person1 shouldBe JsObject(Map(
-      "name" -> JsString("Dave"),
-      "email" -> JsString("dave@example.com")
-    ))
+    person1 shouldBe JsObject(
+      Map("name" -> JsString("Dave"), "email" -> JsString("dave@example.com"))
+    )
 
     val person2 = Person("Dave", "dave@example.com").toJson
-    person2 shouldBe JsObject(Map(
-      "name" -> JsString("Dave"),
-      "email" -> JsString("dave@example.com")
-    ))
+    person2 shouldBe JsObject(
+      Map("name" -> JsString("Dave"), "email" -> JsString("dave@example.com"))
+    )
 
     val person3 = Json.toJson(Option(Person("Dave", "dave@example.com")))
-    person3 shouldBe JsObject(Map(
-      "name" -> JsString("Dave"),
-      "email" -> JsString("dave@example.com")
-    ))
+    person3 shouldBe JsObject(
+      Map("name" -> JsString("Dave"), "email" -> JsString("dave@example.com"))
+    )
 
     val nonePerson: Option[Person] = None
     val person4 = Json.toJson(nonePerson)

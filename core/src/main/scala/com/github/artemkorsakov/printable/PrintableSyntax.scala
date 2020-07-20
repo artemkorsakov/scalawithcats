@@ -8,5 +8,5 @@ object PrintableSyntax {
     def print(implicit printable: Printable[A]): Unit =
       Printable.print(value)
   }
-  
+
 }
