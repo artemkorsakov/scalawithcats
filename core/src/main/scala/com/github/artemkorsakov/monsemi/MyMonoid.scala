@@ -1,25 +1,25 @@
 package com.github.artemkorsakov.monsemi
 
-trait Semigroup[A] {
+trait MySemigroup[A] {
   def combine(x: A, y: A): A
 }
 
-trait Monoid[A] extends Semigroup[A] {
+trait MyMonoid[A] extends MySemigroup[A] {
   def empty: A
 }
 
-object Monoid {
-  def apply[A](implicit monoid: Monoid[A]): Monoid[A] =
+object MyMonoid {
+  def apply[A](implicit monoid: MyMonoid[A]): MyMonoid[A] =
     monoid
 
   def associativeLaw[A](x: A, y: A, z: A)(
-    implicit monoid: Monoid[A]
+    implicit monoid: MyMonoid[A]
   ): Boolean = {
     monoid.combine(x, monoid.combine(y, z)) ==
       monoid.combine(monoid.combine(x, y), z)
   }
 
-  def identityLaw[A](x: A)(implicit monoid: Monoid[A]): Boolean = {
+  def identityLaw[A](x: A)(implicit monoid: MyMonoid[A]): Boolean = {
     (monoid.combine(x, monoid.empty) == x) &&
     (monoid.combine(monoid.empty, x) == x)
   }
