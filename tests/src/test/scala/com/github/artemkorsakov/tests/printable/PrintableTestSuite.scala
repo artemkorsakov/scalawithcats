@@ -9,15 +9,23 @@ import org.scalatest.funsuite.AnyFunSuiteLike
 
 class PrintableTestSuite extends AnyFunSuiteLike with Matchers {
   test("test Printable") {
-    Printable.print("Test string")
-    Printable.format("Test string") shouldBe "Test string"
+    Printable.print("'Test string'")
+    Printable.format("Test string") shouldBe "'Test string'"
     Printable.print(123)
     Printable.format(123) shouldBe "123"
 
     val cat: Cat = Cat("Garfield", 5, "white")
     Printable.print(cat)
-    Printable.format(cat) shouldBe "Garfield is a 5 year-old white cat."
+    Printable.format(cat) shouldBe "'Garfield' is a 5 year-old 'white' cat."
     cat.print
-    cat.format shouldBe "Garfield is a 5 year-old white cat."
+    cat.format shouldBe "'Garfield' is a 5 year-old 'white' cat."
+  }
+
+  test("test contramap") {
+    Printable.format("hello") shouldBe "'hello'"
+    Printable.format(true) shouldBe "yes"
+
+    Printable.format(Box("hello world")) shouldBe "'hello world'"
+    Printable.format(Box(true)) shouldBe "yes"
   }
 }

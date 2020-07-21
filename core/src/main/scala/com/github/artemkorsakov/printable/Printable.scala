@@ -1,7 +1,11 @@
 package com.github.artemkorsakov.printable
 
-trait Printable[A] {
+trait Printable[A] { self =>
+
   def format(value: A): String
+
+  def contramap[B](func: B => A): Printable[B] =
+    (value: B) => self.format(func(value))
 }
 
 object Printable {

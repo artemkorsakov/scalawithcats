@@ -2,16 +2,20 @@ package com.github.artemkorsakov.tests.cats
 
 import java.util.Date
 
+import cats.instances.function._
 import cats.instances.int._
+import cats.instances.list._
 import cats.instances.map._
 import cats.instances.option._
 import cats.instances.string._
 import cats.instances.tuple._
+import cats.syntax.contravariant._
 import cats.syntax.eq._
+import cats.syntax.functor._
 import cats.syntax.option._
 import cats.syntax.semigroup._
 import cats.syntax.show._
-import cats.{Eq, Monoid, Semigroup}
+import cats.{Contravariant, Eq, Functor, Monoid, Semigroup, Show}
 import com.github.artemkorsakov.cats.Cat
 import com.github.artemkorsakov.cats.EqInstances._
 import com.github.artemkorsakov.cats.ShowInstances._
@@ -19,6 +23,8 @@ import com.github.artemkorsakov.monsemi.SuperAdderInstances._
 import com.github.artemkorsakov.monsemi.{Order, SuperAdder}
 import org.scalatest.Matchers
 import org.scalatest.funsuite.AnyFunSuiteLike
+import cats.Monoid
+import cats.syntax.invariant._
 
 class CatsTestSuite extends AnyFunSuiteLike with Matchers {
   test("test cats.Show") {
@@ -91,8 +97,8 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     val map2 = Map("b" -> 3, "d" -> 4)
     (map1 |+| map2) shouldBe Map("b" -> 5, "d" -> 4, "a" -> 1)
 
-    val tuple1: Tuple2[String, Int] = ("hello", 123)
-    val tuple2: Tuple2[String, Int] = ("world", 321)
+    val tuple1: (String, Int) = ("hello", 123)
+    val tuple2: (String, Int) = ("world", 321)
     val tuple = tuple1 |+| tuple2
     tuple._1 shouldBe "helloworld"
     tuple._2 shouldBe 444
@@ -100,4 +106,55 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     SuperAdder.addAll(List(1, 2, 3)) shouldBe 6
     SuperAdder.addAll(List(None, Some(1), Some(2))) shouldBe Some(3)
   }
+
+  test("test Functor Type") {
+    val list1 = List(1, 2, 3)
+    Functor[List].map(list1)(_ * 2) shouldBe List(2, 4, 6)
+    Functor[List].map(list1)(_ / 2) shouldBe List(0, 1, 1)
+
+    val option1 = Option(123)
+    Functor[Option].map(option1)(_.toString) shouldBe Some("123")
+
+    val func = (x: Int) => x + 1
+    val liftedFunc = Functor[Option].lift(func)
+    liftedFunc(Option(1)) shouldBe Some(2)
+
+    Functor[List].as(list1, "As") shouldBe List("As", "As", "As")
+
+    val func1 = (a: Int) => a + 1
+    val func2 = (a: Int) => a * 2
+    val func3 = (a: Int) => s"$a!"
+    val func4 = func1.map(func2).map(func3)
+
+    func4(123) shouldBe "248!"
+
+    def doMath[F[_]](start: F[Int])(implicit functor: Functor[F]): F[Int] =
+      start.map(n => n + 1 * 2)
+    doMath(Option(20)) shouldBe Some(22)
+    doMath(List(1, 2, 3)) shouldBe List(3, 4, 5)
+  }
+
+  test("test Contravariant in Cats") {
+    val showString = Show[String]
+
+    val showSymbol = Contravariant[Show].contramap(showString)(
+      (sym: Symbol) => s"'${sym.name}'"
+    )
+
+    showSymbol.show(Symbol("dave")) shouldBe "'dave'"
+
+    showString
+      .contramap[Symbol](sym => s"'${sym.name}'")
+      .show(Symbol("dave")) shouldBe "'dave'"
+  }
+
+  test("test Invariant in Cats") {
+    implicit val symbolMonoid: Monoid[Symbol] =
+      Monoid[String].imap(Symbol.apply)(_.name)
+
+    Monoid[Symbol].empty.toString() shouldBe "'"
+
+    (Symbol("a") |+| Symbol("few") |+| Symbol("words")).toString() shouldBe "'afewwords"
+  }
+
 }
