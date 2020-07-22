@@ -12,6 +12,7 @@ import cats.instances.tuple._
 import cats.syntax.contravariant._
 import cats.syntax.eq._
 import cats.syntax.functor._
+import cats.syntax.invariant._
 import cats.syntax.option._
 import cats.syntax.semigroup._
 import cats.syntax.show._
@@ -23,8 +24,6 @@ import com.github.artemkorsakov.monsemi.SuperAdderInstances._
 import com.github.artemkorsakov.monsemi.{Order, SuperAdder}
 import org.scalatest.Matchers
 import org.scalatest.funsuite.AnyFunSuiteLike
-import cats.Monoid
-import cats.syntax.invariant._
 
 class CatsTestSuite extends AnyFunSuiteLike with Matchers {
   test("test cats.Show") {
@@ -154,7 +153,27 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
 
     Monoid[Symbol].empty.toString() shouldBe "'"
 
-    (Symbol("a") |+| Symbol("few") |+| Symbol("words")).toString() shouldBe "'afewwords"
+    (Symbol("a") |+| Symbol("few") |+| Symbol("words"))
+      .toString() shouldBe "'afewwords"
+  }
+
+  test("test Aside: Partial Unification") {
+    val func1 = (x: Int) => x.toDouble
+    val func2 = (y: Double) => y * 2
+
+    val func3 = func1.map(func2)
+    func3(5) shouldBe 10.0
+
+    val either: Either[String, Int] = Right(123)
+    either.map(_ + 1) shouldBe Right(124)
+
+    val func3a: Int => Double =
+      a => func2(func1(a))
+    func3a(5) shouldBe 10.0
+
+    val func3b: Int => Double =
+      func2.compose(func1)
+    func3b(5) shouldBe 10.0
   }
 
 }
