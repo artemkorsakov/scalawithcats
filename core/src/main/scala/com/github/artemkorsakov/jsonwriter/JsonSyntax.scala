@@ -7,7 +7,7 @@ object JsonSyntax {
   }
 
   implicit def optionWriter[A](
-    implicit writer: JsonWriter[A]
+      implicit writer: JsonWriter[A]
   ): JsonWriter[Option[A]] = {
     case Some(aValue) => writer.write(aValue)
     case None         => JsNull

@@ -2,13 +2,16 @@ package com.github.artemkorsakov.tests.cats
 
 import java.util.Date
 
+import cats._
 import cats.instances.function._
+import cats.instances.future._
 import cats.instances.int._
 import cats.instances.list._
 import cats.instances.map._
 import cats.instances.option._
 import cats.instances.string._
 import cats.instances.tuple._
+import cats.instances.vector._
 import cats.syntax.contravariant._
 import cats.syntax.eq._
 import cats.syntax.functor._
@@ -16,14 +19,17 @@ import cats.syntax.invariant._
 import cats.syntax.option._
 import cats.syntax.semigroup._
 import cats.syntax.show._
-import cats.{Contravariant, Eq, Functor, Monoid, Semigroup, Show}
 import com.github.artemkorsakov.cats.Cat
 import com.github.artemkorsakov.cats.EqInstances._
 import com.github.artemkorsakov.cats.ShowInstances._
 import com.github.artemkorsakov.monsemi.SuperAdderInstances._
-import com.github.artemkorsakov.monsemi.{Order, SuperAdder}
+import com.github.artemkorsakov.monsemi.{ Order, SuperAdder }
 import org.scalatest.Matchers
 import org.scalatest.funsuite.AnyFunSuiteLike
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
 
 class CatsTestSuite extends AnyFunSuiteLike with Matchers {
   test("test cats.Show") {
@@ -54,12 +60,12 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     val y = new Date() // a bit later than now
     x eqv y shouldBe false
 
-    val cat1 = Cat("Garfield", 38, "white")
-    val cat2 = Cat("Heathcliff", 33, "orange and black")
-    val cat3 = Cat("Heathcliff", 32, "orange and black")
-    val cat4 = Cat("Heathcliff", 33, "black")
-    val cat5 = Cat("Garfield", 33, "orange and black")
-    val cat6 = Cat("Heathcliff", 33, "orange and black")
+    val cat1       = Cat("Garfield", 38, "white")
+    val cat2       = Cat("Heathcliff", 33, "orange and black")
+    val cat3       = Cat("Heathcliff", 32, "orange and black")
+    val cat4       = Cat("Heathcliff", 33, "black")
+    val cat5       = Cat("Garfield", 33, "orange and black")
+    val cat6       = Cat("Heathcliff", 33, "orange and black")
     val optionCat1 = cat1.some
     val optionCat2 = none[Cat]
 
@@ -98,7 +104,7 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
 
     val tuple1: (String, Int) = ("hello", 123)
     val tuple2: (String, Int) = ("world", 321)
-    val tuple = tuple1 |+| tuple2
+    val tuple                 = tuple1 |+| tuple2
     tuple._1 shouldBe "helloworld"
     tuple._2 shouldBe 444
 
@@ -114,7 +120,7 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     val option1 = Option(123)
     Functor[Option].map(option1)(_.toString) shouldBe Some("123")
 
-    val func = (x: Int) => x + 1
+    val func       = (x: Int) => x + 1
     val liftedFunc = Functor[Option].lift(func)
     liftedFunc(Option(1)) shouldBe Some(2)
 
@@ -136,9 +142,7 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
   test("test Contravariant in Cats") {
     val showString = Show[String]
 
-    val showSymbol = Contravariant[Show].contramap(showString)(
-      (sym: Symbol) => s"'${sym.name}'"
-    )
+    val showSymbol = Contravariant[Show].contramap(showString)((sym: Symbol) => s"'${sym.name}'")
 
     showSymbol.show(Symbol("dave")) shouldBe "'dave'"
 
@@ -174,6 +178,30 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     val func3b: Int => Double =
       func2.compose(func1)
     func3b(5) shouldBe 10.0
+  }
+
+  test("test The Monad Type Class") {
+    val opt1 = Monad[Option].pure(3)
+    opt1 shouldBe Some(3)
+    val opt2 = Monad[Option].flatMap(opt1)(a => Some(a + 2))
+    opt2 shouldBe Some(5)
+    val opt3 = Monad[Option].map(opt2)(a => 100 * a)
+    opt3 shouldBe Some(500)
+
+    val list1 = Monad[List].pure(3)
+    list1 shouldBe List(3)
+    val list2 = Monad[List].flatMap(List(1, 2, 3))(a => List(a, a * 10))
+    list2 shouldBe List(1, 10, 2, 20, 3, 30)
+    val list3 = Monad[List].map(list2)(a => a + 123)
+    list3 shouldBe List(124, 133, 125, 143, 126, 153)
+
+    Monad[Option].flatMap(Option(1))(a => Option(a * 2)) shouldBe Some(2)
+    Monad[List].flatMap(List(1, 2, 3))(a => List(a, a * 10)) shouldBe List(1, 10, 2, 20, 3, 30)
+    Monad[Vector].flatMap(Vector(1, 2, 3))(a => Vector(a, a * 10)) shouldBe Vector(1, 10, 2, 20, 3, 30)
+
+    val fm     = Monad[Future]
+    val future = fm.flatMap(fm.pure(1))(x => fm.pure(x + 2))
+    Await.result(future, 1.second) shouldBe 3
   }
 
 }

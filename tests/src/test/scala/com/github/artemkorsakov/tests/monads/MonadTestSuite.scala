@@ -25,7 +25,7 @@ class MonadTestSuite extends AnyFunSuiteLike with Matchers {
       for {
         aNum <- parseInt(aStr)
         bNum <- parseInt(bStr)
-        ans <- divide(aNum, bNum)
+        ans  <- divide(aNum, bNum)
       } yield ans
 
     stringDivideBy("abc", "bcd") shouldBe None
@@ -38,15 +38,14 @@ class MonadTestSuite extends AnyFunSuiteLike with Matchers {
     (for {
       x <- (1 to 3).toList
       y <- (4 to 5).toList
-    } yield
-      (x, y)) shouldBe List((1, 4), (1, 5), (2, 4), (2, 5), (3, 4), (3, 5))
+    } yield (x, y)) shouldBe List((1, 4), (1, 5), (2, 4), (2, 5), (3, 4), (3, 5))
   }
 
   test("test Future Monad") {
-    def doSomethingLongRunning: Future[Int] = Future(100)
-    def doSomethingElseLongRunning: Future[Int] = Future(200)
+    val doSomethingLongRunning: Future[Int]     = Future(100)
+    val doSomethingElseLongRunning: Future[Int] = Future(200)
 
-    def doSomethingVeryLongRunning: Future[Int] =
+    val doSomethingVeryLongRunning: Future[Int] =
       for {
         result1 <- doSomethingLongRunning
         result2 <- doSomethingElseLongRunning

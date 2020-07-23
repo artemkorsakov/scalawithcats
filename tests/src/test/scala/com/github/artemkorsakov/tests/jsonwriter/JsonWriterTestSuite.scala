@@ -18,7 +18,7 @@ class JsonWriterTestSuite extends AnyFunSuiteLike with Matchers {
     str3 shouldBe JsString("Dave")
 
     val noneStr: Option[String] = None
-    val str4 = Json.toJson(noneStr)
+    val str4                    = Json.toJson(noneStr)
     str4 shouldBe JsNull
 
     val person1 = Json.toJson(Person("Dave", "dave@example.com"))
@@ -37,7 +37,7 @@ class JsonWriterTestSuite extends AnyFunSuiteLike with Matchers {
     )
 
     val nonePerson: Option[Person] = None
-    val person4 = Json.toJson(nonePerson)
+    val person4                    = Json.toJson(nonePerson)
     person4 shouldBe JsNull
   }
 }

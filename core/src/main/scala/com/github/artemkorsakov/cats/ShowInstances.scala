@@ -12,8 +12,5 @@ object ShowInstances {
     Show.show(date => s"${date.getTime}ms since the epoch.")
 
   implicit val catPrintable: Show[Cat] =
-    Show.show(
-      cat =>
-        s"${cat.name.show} is a ${cat.age.show} year-old ${cat.color.show} cat."
-    )
+    Show.show(cat => s"${cat.name.show} is a ${cat.age.show} year-old ${cat.color.show} cat.")
 }

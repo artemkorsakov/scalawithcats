@@ -10,6 +10,6 @@ object JsonWriterInstances {
     (value: Person) =>
       JsObject(
         Map("name" -> JsString(value.name), "email" -> JsString(value.email))
-    )
+      )
 
 }

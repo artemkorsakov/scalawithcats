@@ -2,14 +2,14 @@ package com.github.artemkorsakov.tests.functors
 
 import cats.instances.function._
 import cats.syntax.functor._
-import com.github.artemkorsakov.functors.{Branch, Leaf, Tree}
 import com.github.artemkorsakov.functors.Tree._
+import com.github.artemkorsakov.functors.{ Branch, Leaf, Tree }
 import org.scalatest.Matchers
 import org.scalatest.funsuite.AnyFunSuiteLike
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 
 class FunctorsTestSuite extends AnyFunSuiteLike with Matchers {
   test("test Future") {
@@ -32,10 +32,7 @@ class FunctorsTestSuite extends AnyFunSuiteLike with Matchers {
     func2(func1(1)) shouldBe 2.0
 
     val func =
-      ((x: Int) => x.toDouble).
-        map(x => x + 1).
-        map(x => x * 2).
-        map(x => s"$x!")
+      ((x: Int) => x.toDouble).map(x => x + 1).map(x => x * 2).map(x => s"$x!")
 
     func(123) shouldBe "248.0!"
   }

@@ -9,19 +9,12 @@ trait MyMonoid[A] extends MySemigroup[A] {
 }
 
 object MyMonoid {
-  def apply[A](implicit monoid: MyMonoid[A]): MyMonoid[A] =
-    monoid
+  def apply[A](implicit mon: MyMonoid[A]): MyMonoid[A] = mon
 
-  def associativeLaw[A](x: A, y: A, z: A)(
-    implicit monoid: MyMonoid[A]
-  ): Boolean = {
-    monoid.combine(x, monoid.combine(y, z)) ==
-      monoid.combine(monoid.combine(x, y), z)
-  }
+  def associativeLaw[A](x: A, y: A, z: A)(implicit mon: MyMonoid[A]): Boolean =
+    mon.combine(x, mon.combine(y, z)) == mon.combine(mon.combine(x, y), z)
 
-  def identityLaw[A](x: A)(implicit monoid: MyMonoid[A]): Boolean = {
-    (monoid.combine(x, monoid.empty) == x) &&
-    (monoid.combine(monoid.empty, x) == x)
-  }
+  def identityLaw[A](x: A)(implicit mon: MyMonoid[A]): Boolean =
+    (mon.combine(x, mon.empty) == x) && (mon.combine(mon.empty, x) == x)
 
 }
