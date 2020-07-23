@@ -75,4 +75,15 @@ class MonadTestSuite extends AnyFunSuiteLike with Matchers {
     c shouldBe 8
   }
 
+  test("test Either") {
+    val either1: Either[String, Int] = Right(10)
+    val either2: Either[String, Int] = Right(32)
+
+    (for {
+      a <- either1
+      b <- either2
+    } yield a + b) shouldBe Right(42)
+
+  }
+
 }

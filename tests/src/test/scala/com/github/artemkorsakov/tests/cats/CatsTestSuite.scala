@@ -14,6 +14,7 @@ import cats.instances.tuple._
 import cats.instances.vector._
 import cats.syntax.applicative._
 import cats.syntax.contravariant._
+import cats.syntax.either._
 import cats.syntax.eq._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -21,9 +22,10 @@ import cats.syntax.invariant._
 import cats.syntax.option._
 import cats.syntax.semigroup._
 import cats.syntax.show._
-import com.github.artemkorsakov.cats.Cat
 import com.github.artemkorsakov.cats.EqInstances._
+import com.github.artemkorsakov.cats.LoginError.{ LoginResult, User, UserNotFound }
 import com.github.artemkorsakov.cats.ShowInstances._
+import com.github.artemkorsakov.cats.{ Cat, LoginError }
 import com.github.artemkorsakov.monsemi.SuperAdderInstances._
 import com.github.artemkorsakov.monsemi.{ Order, SuperAdder }
 import org.scalatest.Matchers
@@ -241,4 +243,84 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     } yield x + y) shouldBe 7
   }
 
+  test("test 4.4.2 Creating Instances") {
+    val a = 3.asRight[String]
+    a shouldBe Right(3)
+    val b = 4.asRight[String]
+    b shouldBe Right(4)
+
+    val c = for {
+      x <- a
+      y <- b
+    } yield x * x + y * y
+    c shouldBe Right(25)
+
+    def countPositive(nums: List[Int]) =
+      nums.foldLeft(0.asRight[String]) { (accumulator, num) =>
+        if (num > 0) {
+          accumulator.map(_ + 1)
+        } else {
+          Left("Negative. Stopping!")
+        }
+      }
+
+    countPositive(List(1, 2, 3)) shouldBe Right(3)
+    countPositive(List(1, -2, 3)) shouldBe Left("Negative. Stopping!")
+
+    println(Either.catchOnly[NumberFormatException]("foo".toInt))
+    println(Either.catchNonFatal(sys.error("Badness")))
+    println(Either.fromTry(scala.util.Try("foo".toInt)))
+    println(Either.fromOption[String, Int](None, "Badness"))
+  }
+
+  test("test 4.4.3 Transforming Eithers") {
+    "Error".asLeft[Int].getOrElse(0) shouldBe 0
+    "Error".asLeft[Int].orElse(2.asRight[String]) shouldBe Right(2)
+    // Either[String, Int] = Right(2)
+
+    (-1).asRight[String].ensure("Must be non-negative!")(_ > 0) shouldBe Left("Must be non-negative!")
+    // Either[String, Int] = Left("Must be non-negative!")
+
+    "error".asLeft[Int].recover {
+      case _: String => -1
+    } shouldBe Right(-1)
+    // Either[String, Int] = Right(-1)
+
+    "error".asLeft[Int].recoverWith {
+      case _: String => Right(-1)
+    } shouldBe Right(-1)
+    // Either[String, Int] = Right(-1)
+
+    "foo".asLeft[Int].leftMap(_.reverse) shouldBe Left("oof")
+    // Either[String, Int] = Left("oof")
+    6.asRight[String].bimap(_.reverse, _ * 7) shouldBe Right(42)
+    // Either[String, Int] = Right(42)
+    "bar".asLeft[Int].bimap(_.reverse, _ * 7) shouldBe Left("rab")
+    // Either[String, Int] = Left("rab")
+
+    123.asRight[String] shouldBe Right(123)
+    // Either[String, Int] = Right(123)
+    123.asRight[String].swap shouldBe Left(123)
+    // Either[Int, String] = Left(123)
+  }
+
+  test("test 4.4.4 Error Handling") {
+    (for {
+      a <- 1.asRight[String]
+      b <- 0.asRight[String]
+      c <- if (b == 0) "DIV0".asLeft[Int]
+      else (a / b).asRight[String]
+    } yield c * 100) shouldBe Left("DIV0")
+    // Either[String, Int] = Left("DIV0")
+
+    val result1: LoginResult = User("dave", "passw0rd").asRight
+    result1 shouldBe Right(User("dave", "passw0rd"))
+    val result2: LoginResult = UserNotFound("dave").asLeft
+    result2 shouldBe Left(UserNotFound("dave"))
+
+    result1.fold(LoginError.handleError, println)
+    // User(dave,passw0rd)
+    result2.fold(LoginError.handleError, println)
+    // User not found: dave
+  }
 }
