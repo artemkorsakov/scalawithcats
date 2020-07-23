@@ -12,8 +12,10 @@ import cats.instances.option._
 import cats.instances.string._
 import cats.instances.tuple._
 import cats.instances.vector._
+import cats.syntax.applicative._
 import cats.syntax.contravariant._
 import cats.syntax.eq._
+import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.invariant._
 import cats.syntax.option._
@@ -202,6 +204,41 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     val fm     = Monad[Future]
     val future = fm.flatMap(fm.pure(1))(x => fm.pure(x + 2))
     Await.result(future, 1.second) shouldBe 3
+  }
+
+  test("test Monad Syntax") {
+    1.pure[Option] shouldBe Some(1)
+    1.pure[List] shouldBe List(1)
+
+    def sumSquare[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] =
+      a.flatMap(x => b.map(y => x * x + y * y))
+
+    sumSquare(Option(3), Option(4)) shouldBe Option(25)
+    sumSquare(List(1, 2, 3), List(4, 5)) shouldBe List(17, 26, 20, 29, 25, 34)
+
+    def sumSquare2[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] =
+      for {
+        x <- a
+        y <- b
+      } yield x * x + y * y
+
+    sumSquare2(Option(3), Option(4)) shouldBe Option(25)
+    sumSquare2(List(1, 2, 3), List(4, 5)) shouldBe List(17, 26, 20, 29, 25, 34)
+
+    sumSquare(3: Id[Int], 4: Id[Int]) shouldBe 25
+
+    ("Dave": Id[String]) shouldBe "Dave"
+    (123: Id[Int]) shouldBe 123
+    (List(1, 2, 3): Id[List[Int]]) shouldBe List(1, 2, 3)
+
+    val a = Monad[Id].pure(3)
+    a shouldBe 3
+    val b = Monad[Id].flatMap(a)(_ + 1)
+    b shouldBe 4
+    (for {
+      x <- a
+      y <- b
+    } yield x + y) shouldBe 7
   }
 
 }

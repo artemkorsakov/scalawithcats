@@ -1,7 +1,7 @@
 package com.github.artemkorsakov.tests.monads
 
-import com.github.artemkorsakov.monads.MyMonad
 import com.github.artemkorsakov.monads.MyMonadInstances._
+import com.github.artemkorsakov.monads.{ MyId, MyMonad }
 import org.scalatest.Matchers
 import org.scalatest.funsuite.AnyFunSuiteLike
 
@@ -64,6 +64,15 @@ class MonadTestSuite extends AnyFunSuiteLike with Matchers {
     val m = monad.pure("1")
     monad.rightIdentity(m) shouldBe true
     monad.associativity(m)(x => List(x.toInt))(x => List(x.toBinaryString)) shouldBe true
+  }
+
+  test("test MyId") {
+    val a = MyId.pure(3)
+    a shouldBe 3
+    val b = MyId.flatMap(a)(_ + 1)
+    b shouldBe 4
+    val c = MyId.map(3)(_ + 5)
+    c shouldBe 8
   }
 
 }
