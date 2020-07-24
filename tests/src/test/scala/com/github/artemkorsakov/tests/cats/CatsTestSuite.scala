@@ -323,4 +323,141 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     result2.fold(LoginError.handleError, println)
     // User not found: dave
   }
+
+  test("test 4.6.1 Eager, Lazy, Memoized, Oh My!") {
+    val now = Eval.now(math.random + 1000)
+    println(now)
+    // now: Eval[Double] = Now(1000.020590704322)
+    val always = Eval.always(math.random + 3000)
+    println(always)
+    // always: Eval[Double] = cats.Always@4d8ca6eb
+    val later = Eval.later(math.random + 2000)
+    println(later)
+    // later: Eval[Double] = cats.Later@601dc0b2
+
+    println(now.value)
+    // res6: Double = 1000.020590704322
+    println(always.value)
+    // res7: Double = 3000.97102818157
+    println(later.value)
+    // res8: Double = 2000.0126977436273
+
+    val x = Eval.now {
+      println("Computing X")
+      math.random
+    }
+    // Computing X
+    // x: Eval[Double] = Now(0.681816469770503)
+
+    println(x.value) // first access
+    // res10: Double = 0.681816469770503 // first access
+    println(x.value) // second access
+    // res11: Double = 0.681816469770503
+
+    val y = Eval.always {
+      println("Computing Y")
+      math.random
+    }
+    // y: Eval[Double] = cats.Always@414a351
+
+    println(y.value) // first access
+    // Computing Y
+    // res12: Double = 0.09982997820703643 // first access
+    println(y.value) // second access
+    // Computing Y
+    // res13: Double = 0.34240334819463436
+
+    val z = Eval.later {
+      println("Computing Z")
+      math.random
+    }
+    // z: Eval[Double] = cats.Later@b0a344a
+
+    println(z.value) // first access
+    // Computing Z
+    // res14: Double = 0.3604236919233441 // first access
+    println(z.value) // second access
+    // res15: Double = 0.3604236919233441
+
+    val greeting = Eval
+      .always { println("Step 1"); "Hello" }
+      .map { str => println("Step 2"); s"$str world" }
+
+    println(greeting.value)
+
+    val ans = for {
+      a <- Eval.now { println("Calculating A"); 40 }
+      b <- Eval.always { println("Calculating B"); 2 }
+    } yield {
+      println("Adding A and B")
+      a + b
+    }
+
+    println(ans.value)
+    println(ans.value)
+
+    val saying = Eval
+      .always { println("Step 1"); "The cat" }
+      .map { str => println("Step 2"); s"$str sat on" }
+      .memoize
+      .map { str => println("Step 3"); s"$str the mat" }
+    // saying: Eval[String] = cats.Eval$$anon$4@ca01c64
+
+    println(saying.value) // first access
+    // Step 1
+    // Step 2
+    // Step 3
+    // res19: String = "The cat sat on the mat" // first access
+    println(saying.value) // second access
+    // Step 3
+    // res20: String = "The cat sat on the mat"
+  }
+
+  test("test 4.6.4 Trampolining and Eval.defer") {
+    def factorial(n: BigInt): Eval[BigInt] =
+      if (n == 1) {
+        Eval.now(n)
+      } else {
+        Eval.defer(factorial(n - 1).map(_ * n))
+      }
+
+    factorial(50000).value
+  }
+
+  test("test 4.6.5 Exercise: Safer Folding using Eval") {
+    def foldRight[A, B](as: List[A], acc: B)(fn: (A, B) => B): B =
+      as match {
+        case head :: tail =>
+          fn(head, foldRight(tail, acc)(fn))
+        case Nil =>
+          acc
+      }
+
+    val res = foldRight((1 to 10).toList, "start")((x, y) => y + " - " + x)
+    res shouldBe "start - 10 - 9 - 8 - 7 - 6 - 5 - 4 - 3 - 2 - 1"
+
+    def foldRight2[A, B](as: List[A], acc: B)(fn: (A, B) => B): Eval[B] =
+      as match {
+        case head :: tail =>
+          Eval.later(fn(head, Eval.defer(foldRight2(tail, acc)(fn)).value))
+        case Nil =>
+          Eval.now(acc)
+      }
+
+    val res2 = foldRight2((1 to 10).toList, "start")((x, y) => y + " - " + x)
+    res2.value shouldBe "start - 10 - 9 - 8 - 7 - 6 - 5 - 4 - 3 - 2 - 1"
+
+    def foldRightEval[A, B](as: List[A], acc: Eval[B])(fn: (A, Eval[B]) => Eval[B]): Eval[B] =
+      as match {
+        case head :: tail =>
+          Eval.defer(fn(head, foldRightEval(tail, acc)(fn)))
+        case Nil =>
+          acc
+      }
+
+    def foldRight3[A, B](as: List[A], acc: B)(fn: (A, B) => B): B =
+      foldRightEval(as, Eval.now(acc))((a, b) => b.map(fn(a, _))).value
+
+    foldRight3((1 to 100000).toList, 0L)(_ + _) shouldBe 5000050000L
+  }
 }
