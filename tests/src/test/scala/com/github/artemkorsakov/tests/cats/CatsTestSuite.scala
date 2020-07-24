@@ -3,7 +3,8 @@ package com.github.artemkorsakov.tests.cats
 import java.util.Date
 
 import cats._
-import cats.data.{ Reader, Writer }
+import cats.data.State._
+import cats.data.{ Reader, State, Writer }
 import cats.instances.function._
 import cats.instances.future._
 import cats.instances.int._
@@ -629,4 +630,90 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     checkLogin(1, "zerocool").run(db) shouldBe true
     checkLogin(4, "davinci").run(db) shouldBe false
   }
+
+  test("4.9.1 Creating and Unpacking State") {
+    val a = State[Int, String](state => (state, s"The state is $state"))
+
+    // Get the state and the result:
+    val (state, result) = a.run(10).value
+    state shouldBe 10
+    result shouldBe "The state is 10"
+    // state: Int = 10
+    // result: String = "The state is 10"
+
+    // Get the state, ignore the result:
+    val justTheState = a.runS(10).value
+    justTheState shouldBe 10
+    // justTheState: Int = 10
+
+    // Get the result, ignore the state:
+    val justTheResult = a.runA(10).value
+    justTheResult shouldBe "The state is 10"
+    // justTheResult: String = "The state is 10"
+  }
+
+  test("4.9.2 Composing and Transforming State") {
+    val step1 = State[Int, String] { num =>
+      val ans = num + 1
+      (ans, s"Result of step1: $ans")
+    }
+
+    val step2 = State[Int, String] { num =>
+      val ans = num * 2
+      (ans, s"Result of step2: $ans")
+    }
+
+    val both = for {
+      a <- step1
+      b <- step2
+    } yield (a, b)
+
+    val (stateTmp, resultTmp) = both.run(20).value
+    stateTmp shouldBe 42
+    resultTmp shouldBe (("Result of step1: 21", "Result of step2: 42"))
+    // state: Int = 42
+    // result: (String, String) = ("Result of step1: 21", "Result of step2: 42")
+
+    val getDemo = State.get[Int]
+    // getDemo: State[Int, Int] = cats.data.IndexedStateT@741518c8
+    getDemo.run(10).value shouldBe (10 -> 10)
+    // res1: (Int, Int) = (10, 10)
+
+    val setDemo = State.set[Int](30)
+    // setDemo: State[Int, Unit] = cats.data.IndexedStateT@509fb0a
+    setDemo.run(10).value shouldBe ((30, ()))
+    // res2: (Int, Unit) = (30, ())
+
+    val pureDemo = State.pure[Int, String]("Result")
+    // pureDemo: State[Int, String] = cats.data.IndexedStateT@562ae0a8
+    pureDemo.run(10).value shouldBe (10 -> "Result")
+    // res3: (Int, String) = (10, "Result")
+
+    val inspectDemo = State.inspect[Int, String](x => s"$x!")
+    // inspectDemo: State[Int, String] = cats.data.IndexedStateT@2dc6b50f
+    inspectDemo.run(10).value shouldBe (10 -> "10!")
+    // res4: (Int, String) = (10, "10!")
+
+    val modifyDemo = State.modify[Int](_ + 1)
+    // modifyDemo: State[Int, Unit] = cats.data.IndexedStateT@71c93b27
+    modifyDemo.run(10).value shouldBe ((11, ()))
+    // res5: (Int, Unit) = (11, ())
+
+    val program: State[Int, (Int, Int, Int)] = for {
+      a <- get[Int]
+      _ <- set[Int](a + 1)
+      b <- get[Int]
+      _ <- modify[Int](_ + 1)
+      c <- inspect[Int, Int](_ * 1000)
+    } yield (a, b, c)
+    // program: State[Int, (Int, Int, Int)] = cats.data.IndexedStateT@3b525fbf
+
+    val (state, result) = program.run(1).value
+    state shouldBe 3
+    result shouldBe ((1, 2, 3000))
+    // state: Int = 3
+    // result: (Int, Int, Int) = (1, 2, 3000)
+  }
+
+  test("4.9.3 Exercise: Post-Order Calculator") {}
 }
