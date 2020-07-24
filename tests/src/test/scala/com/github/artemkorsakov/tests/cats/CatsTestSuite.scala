@@ -3,6 +3,7 @@ package com.github.artemkorsakov.tests.cats
 import java.util.Date
 
 import cats._
+import cats.data.Writer
 import cats.instances.function._
 import cats.instances.future._
 import cats.instances.int._
@@ -22,8 +23,10 @@ import cats.syntax.invariant._
 import cats.syntax.option._
 import cats.syntax.semigroup._
 import cats.syntax.show._
+import cats.syntax.writer._
 import com.github.artemkorsakov.cats.EqInstances._
 import com.github.artemkorsakov.cats.LoginError.{ LoginResult, User, UserNotFound }
+import com.github.artemkorsakov.cats.MyWriter._
 import com.github.artemkorsakov.cats.ShowInstances._
 import com.github.artemkorsakov.cats.{ Cat, LoginError }
 import com.github.artemkorsakov.monsemi.SuperAdderInstances._
@@ -459,5 +462,120 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
       foldRightEval(as, Eval.now(acc))((a, b) => b.map(fn(a, _))).value
 
     foldRight3((1 to 100000).toList, 0L)(_ + _) shouldBe 5000050000L
+  }
+
+  test("test 4.7.1 Creating and Unpacking Writers") {
+    Writer(
+      Vector(
+        "It was the best of times",
+        "it was the worst of times"
+      ),
+      1859
+    )
+
+    type Logged[A] = Writer[Vector[String], A]
+    println(123.pure[Logged])
+
+    println(Vector("msg1", "msg2", "msg3").tell)
+
+    val a = Writer(Vector("msg1", "msg2", "msg3"), 123)
+    println(a)
+    // a: cats.data.WriterT[cats.package.Id, Vector[String], Int] = WriterT(
+    //   (Vector("msg1", "msg2", "msg3"), 123)
+    // )
+    val b = 123.writer(Vector("msg1", "msg2", "msg3"))
+    println(b)
+    // b: Writer[Vector[String], Int] = WriterT(
+    //   (Vector("msg1", "msg2", "msg3"), 123)
+    // )
+
+    val aResult: Int = a.value
+    aResult shouldBe 123
+    // aResult: Int = 123
+    val aLog: Vector[String] = a.written
+    aLog shouldBe Vector("msg1", "msg2", "msg3")
+    // aLog: Vector[String] = Vector("msg1", "msg2", "msg3")
+
+    val (log, result) = b.run
+    log shouldBe Vector("msg1", "msg2", "msg3")
+    result shouldBe 123
+    // log: Vector[String] = Vector("msg1", "msg2", "msg3")
+    // result: Int = 123
+
+    val writer1 = for {
+      a <- 10.pure[Logged]
+      _ <- Vector("a", "b", "c").tell
+      b <- 32.writer(Vector("x", "y", "z"))
+    } yield a + b
+    // writer1: cats.data.WriterT[cats.package.Id, Vector[String], Int] = WriterT(
+    //   (Vector("a", "b", "c", "x", "y", "z"), 42)
+    // )
+
+    println(writer1.run)
+    // res3: (Vector[String], Int) = (Vector("a", "b", "c", "x", "y", "z"), 42)
+
+    val writer2 = writer1.mapWritten(_.map(_.toUpperCase))
+    // writer2: cats.data.WriterT[cats.package.Id, Vector[String], Int] = WriterT(
+    //   (Vector("A", "B", "C", "X", "Y", "Z"), 42)
+    // )
+
+    println(writer2.run)
+    // res4: (Vector[String], Int) = (Vector("A", "B", "C", "X", "Y", "Z"), 42)
+
+    val writer3 = writer1.bimap(
+      log => log.map(_.toUpperCase),
+      res => res * 100
+    )
+    // writer3: cats.data.WriterT[cats.package.Id, Vector[String], Int] = WriterT(
+    //   (Vector("A", "B", "C", "X", "Y", "Z"), 4200)
+    // )
+
+    println(writer3.run)
+    // res5: (Vector[String], Int) = (Vector("A", "B", "C", "X", "Y", "Z"), 4200)
+
+    val writer4 = writer1.mapBoth { (log, res) =>
+      val log2 = log.map(_ + "!")
+      val res2 = res * 1000
+      (log2, res2)
+    }
+    // writer4: cats.data.WriterT[cats.package.Id, Vector[String], Int] = WriterT(
+    //   (Vector("a!", "b!", "c!", "x!", "y!", "z!"), 42000)
+    // )
+
+    println(writer4.run)
+    // res6: (Vector[String], Int) = (
+    //   Vector("a!", "b!", "c!", "x!", "y!", "z!"),
+    //   42000
+    // )
+
+    val writer5 = writer1.reset
+    // writer5: cats.data.WriterT[cats.package.Id, Vector[String], Int] = WriterT(
+    //   (Vector(), 42)
+    // )
+
+    println(writer5.run)
+    // res7: (Vector[String], Int) = (Vector(), 42)
+
+    val writer6 = writer1.swap
+    // writer6: cats.data.WriterT[cats.package.Id, Int, Vector[String]] = WriterT(
+    //   (42, Vector("a", "b", "c", "x", "y", "z"))
+    // )
+
+    println(writer6.run)
+    // res8: (Int, Vector[String]) = (42, Vector("a", "b", "c", "x", "y", "z"))
+  }
+
+  test("test 4.7.3 Exercise: Show Your Working") {
+    val res = Await.result(
+      Future.sequence(
+        Vector(
+          Future(factorial(5)),
+          Future(factorial(6))
+        )
+      ),
+      5.seconds
+    )
+    println(res.head)
+    println(res.last)
   }
 }
