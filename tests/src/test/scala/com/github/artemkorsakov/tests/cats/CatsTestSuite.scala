@@ -25,6 +25,7 @@ import cats.syntax.option._
 import cats.syntax.semigroup._
 import cats.syntax.show._
 import cats.syntax.writer._
+import com.github.artemkorsakov.cats.CalcState._
 import com.github.artemkorsakov.cats.EqInstances._
 import com.github.artemkorsakov.cats.LoginError.{ LoginResult, User, UserNotFound }
 import com.github.artemkorsakov.cats.MyReader._
@@ -715,5 +716,26 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     // result: (Int, Int, Int) = (1, 2, 3000)
   }
 
-  test("4.9.3 Exercise: Post-Order Calculator") {}
+  test("4.9.3 Exercise: Post-Order Calculator") {
+    evalOne("42").runA(Nil).value shouldBe 42
+
+    val program = for {
+      _   <- evalOne("1")
+      _   <- evalOne("2")
+      ans <- evalOne("+")
+    } yield ans
+    program.runA(Nil).value shouldBe 3
+
+    val multistageProgram = evalAll(List("1", "2", "+", "3", "*"))
+    multistageProgram.runA(Nil).value shouldBe 9
+
+    val biggerProgram = for {
+      _   <- evalAll(List("1", "2", "+"))
+      _   <- evalAll(List("3", "4", "+"))
+      ans <- evalOne("*")
+    } yield ans
+    biggerProgram.runA(Nil).value shouldBe 21
+
+    evalInput("1 2 + 3 4 + *") shouldBe 21
+  }
 }
