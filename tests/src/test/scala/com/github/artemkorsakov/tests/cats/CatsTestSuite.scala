@@ -31,7 +31,9 @@ import com.github.artemkorsakov.cats.LoginError.{ LoginResult, User, UserNotFoun
 import com.github.artemkorsakov.cats.MyReader._
 import com.github.artemkorsakov.cats.MyWriter._
 import com.github.artemkorsakov.cats.ShowInstances._
-import com.github.artemkorsakov.cats.{ Cat, LoginError }
+import com.github.artemkorsakov.cats.{ Cat, LoginError, OptionMonad }
+import com.github.artemkorsakov.functors.Tree._
+import com.github.artemkorsakov.functors.{ Branch, Leaf }
 import com.github.artemkorsakov.monsemi.SuperAdderInstances._
 import com.github.artemkorsakov.monsemi.{ Order, SuperAdder }
 import org.scalatest.Matchers
@@ -738,4 +740,27 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
 
     evalInput("1 2 + 3 4 + *") shouldBe 21
   }
+
+  test("4.10 Defining Custom Monads") {
+    OptionMonad.retryM(100000)(a => if (a == 0) None else Some(a - 1))
+  }
+
+  test("4.10.1 Exercise: Branching out Further with Monads") {
+    val tree1 = branch(leaf(100), leaf(200)).flatMap(x => branch(leaf(x - 1), leaf(x + 1)))
+    tree1 shouldBe Branch(
+      Branch(Leaf(99), Leaf(101)),
+      Branch(Leaf(199), Leaf(201))
+    )
+
+    val tree2 = for {
+      a <- branch(leaf(100), leaf(200))
+      b <- branch(leaf(a - 10), leaf(a + 10))
+      c <- branch(leaf(b - 1), leaf(b + 1))
+    } yield c
+    tree2 shouldBe Branch(
+      Branch(Branch(Leaf(89), Leaf(91)), Branch(Leaf(109), Leaf(111))),
+      Branch(Branch(Leaf(189), Leaf(191)), Branch(Leaf(209), Leaf(211)))
+    )
+  }
+
 }
