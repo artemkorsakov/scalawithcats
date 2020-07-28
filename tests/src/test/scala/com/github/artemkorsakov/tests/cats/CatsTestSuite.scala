@@ -4,7 +4,8 @@ import java.util.Date
 
 import cats._
 import cats.data.State._
-import cats.data.{ Reader, State, Writer }
+import cats.data._
+import cats.instances.either._
 import cats.instances.function._
 import cats.instances.future._
 import cats.instances.int._
@@ -31,6 +32,7 @@ import com.github.artemkorsakov.cats.LoginError.{ LoginResult, User, UserNotFoun
 import com.github.artemkorsakov.cats.MyReader._
 import com.github.artemkorsakov.cats.MyWriter._
 import com.github.artemkorsakov.cats.ShowInstances._
+import com.github.artemkorsakov.cats.Transformative.{ ErrorOr, ErrorOrOption, FutureEitherOption, ListOption }
 import com.github.artemkorsakov.cats.{ Cat, LoginError, OptionMonad }
 import com.github.artemkorsakov.functors.Tree._
 import com.github.artemkorsakov.functors.{ Branch, Leaf }
@@ -761,6 +763,72 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
       Branch(Branch(Leaf(89), Leaf(91)), Branch(Leaf(109), Leaf(111))),
       Branch(Branch(Leaf(189), Leaf(191)), Branch(Leaf(209), Leaf(211)))
     )
+  }
+
+  test("5.2 A Transformative Example") {
+    val result1: ListOption[Int] = OptionT(List(Option(10)))
+    result1.value.head.get shouldBe 10
+    // result1: ListOption[Int] = OptionT(List(Some(10)))
+
+    val result2: ListOption[Int] = 32.pure[ListOption]
+    result2.value.head.get shouldBe 32
+    // result2: ListOption[Int] = OptionT(List(Some(32)))
+
+    val sum = result1.flatMap((x: Int) => result2.map((y: Int) => x + y))
+    sum.value.head.get shouldBe 42
+    // res1: OptionT[List, Int] = OptionT(List(Some(42)))
+
+    val a = 10.pure[ErrorOrOption]
+    a.value.getOrElse(Some(0)) shouldBe Some(10)
+    // a: ErrorOrOption[Int] = OptionT(Right(Some(10)))
+    val b = 32.pure[ErrorOrOption]
+    b.value.getOrElse(Some(0)) shouldBe Some(32)
+    // b: ErrorOrOption[Int] = OptionT(Right(Some(32)))
+
+    val c = a.flatMap(x => b.map(y => x + y))
+    c.value.getOrElse(Some(0)) shouldBe Some(42)
+    // c: OptionT[ErrorOr, Int] = OptionT(Right(Some(42)))
+
+    val futureEitherOr: FutureEitherOption[Int] =
+      for {
+        a <- 10.pure[FutureEitherOption]
+        b <- 32.pure[FutureEitherOption]
+      } yield a + b
+    println(futureEitherOr)
+
+    println(123.pure[EitherT[Option, String, *]])
+    // res3: EitherT[Option, String, Int] = EitherT(Some(Right(123)))
+
+    // Create using apply:
+    val errorStack1 = OptionT[ErrorOr, Int](Right(Some(10)))
+    println(errorStack1)
+    // errorStack1: OptionT[ErrorOr, Int] = OptionT(Right(Some(10)))
+
+    // Create using pure:
+    val errorStack2 = 32.pure[ErrorOrOption]
+    println(errorStack2)
+    // errorStack2: ErrorOrOption[Int] = OptionT(Right(Some(32)))
+
+    // Extracting the untransformed monad stack:
+    errorStack1.value shouldBe Right(Some(10))
+    // res4: ErrorOr[Option[Int]] = Right(Some(10))
+
+    // Mapping over the Either in the stack:
+    errorStack2.value.map(_.getOrElse(-1)) shouldBe Right(32)
+    // res5: Either[String, Int] = Right(32)
+
+    val intermediate = futureEitherOr.value
+    println(intermediate)
+    // intermediate: FutureEither[Option[Int]] = EitherT(
+    //   Future(Success(Right(Some(42))))
+    // )
+
+    val stack = intermediate.value
+    println(stack)
+    // stack: Future[Either[String, Option[Int]]] = Future(Success(Right(Some(42))))
+
+    Await.result(stack, 1.second) shouldBe Right(Some(42))
+    // res7: Either[String, Option[Int]] = Right(Some(42))
   }
 
 }
