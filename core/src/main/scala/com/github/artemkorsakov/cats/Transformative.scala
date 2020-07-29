@@ -1,6 +1,6 @@
 package com.github.artemkorsakov.cats
 
-import cats.data.{ EitherT, OptionT }
+import cats.data._
 
 import scala.concurrent.Future
 
@@ -8,6 +8,7 @@ object Transformative {
   type ListOption[A]    = OptionT[List, A]
   type ErrorOr[A]       = Either[String, A]
   type ErrorOrV[A]      = Either[Vector[String], A]
+  type ErrorOrList[A]   = Either[List[String], A]
   type ErrorOrOption[A] = OptionT[ErrorOr, A]
 
   sealed abstract class HttpError
