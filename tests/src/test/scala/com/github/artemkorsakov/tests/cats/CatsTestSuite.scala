@@ -33,7 +33,7 @@ import com.github.artemkorsakov.cats.MyReader._
 import com.github.artemkorsakov.cats.MyWriter._
 import com.github.artemkorsakov.cats.ShowInstances._
 import com.github.artemkorsakov.cats.Transformative.{ ErrorOr, ErrorOrOption, FutureEitherOption, ListOption }
-import com.github.artemkorsakov.cats.{ Cat, LoginError, OptionMonad }
+import com.github.artemkorsakov.cats.{ Autobots, Cat, LoginError, OptionMonad }
 import com.github.artemkorsakov.functors.Tree._
 import com.github.artemkorsakov.functors.{ Branch, Leaf }
 import com.github.artemkorsakov.monsemi.SuperAdderInstances._
@@ -831,4 +831,19 @@ class CatsTestSuite extends AnyFunSuiteLike with Matchers {
     // res7: Either[String, Option[Int]] = Right(Some(42))
   }
 
+  test("5.4 Exercise: Monads: Transform and Roll Out") {
+    Await.result(Autobots.getPowerLevel("Jazz").value, 1.second) shouldBe Right(6)
+    Await.result(Autobots.getPowerLevel("Bumblebee").value, 1.second) shouldBe Right(8)
+    Await.result(Autobots.getPowerLevel("Hot Rod").value, 1.second) shouldBe Right(10)
+    Await.result(Autobots.getPowerLevel("Test").value, 1.second) shouldBe Left("Test unreachable")
+
+    Await.result(Autobots.canSpecialMove("Jazz", "Hot Rod").value, 1.second) shouldBe Right(true)
+    Await.result(Autobots.canSpecialMove("Bumblebee", "Hot Rod").value, 1.second) shouldBe Right(true)
+    Await.result(Autobots.canSpecialMove("Jazz", "Bumblebee").value, 1.second) shouldBe Right(false)
+    Await.result(Autobots.canSpecialMove("Jazz", "Test").value, 1.second) shouldBe Left("Test unreachable")
+
+    Autobots.tacticalReport("Jazz", "Bumblebee") shouldBe "Jazz and Bumblebee need a recharge."
+    Autobots.tacticalReport("Bumblebee", "Hot Rod") shouldBe "Bumblebee and Hot Rod are ready to roll out!"
+    Autobots.tacticalReport("Jazz", "Ironhide") shouldBe "Comms error: Ironhide unreachable"
+  }
 }
