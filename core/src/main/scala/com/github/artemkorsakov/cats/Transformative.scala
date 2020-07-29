@@ -7,6 +7,7 @@ import scala.concurrent.Future
 object Transformative {
   type ListOption[A]    = OptionT[List, A]
   type ErrorOr[A]       = Either[String, A]
+  type ErrorOrV[A]      = Either[Vector[String], A]
   type ErrorOrOption[A] = OptionT[ErrorOr, A]
 
   sealed abstract class HttpError
