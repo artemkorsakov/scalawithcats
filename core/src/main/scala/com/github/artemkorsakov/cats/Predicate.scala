@@ -16,6 +16,9 @@ sealed trait Predicate[E, A] {
   def or(that: Predicate[E, A]): Predicate[E, A] =
     Or(this, that)
 
+  def run(implicit s: Semigroup[E]): A => Either[E, A] =
+    (a: A) => this(a).toEither
+
   def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
     this match {
       case Pure(func) =>
