@@ -2,6 +2,7 @@ package com.github.artemkorsakov.cats
 
 import cats.Semigroup
 import cats.data.Validated
+import cats.data.Validated._
 import cats.syntax.apply._
 import cats.syntax.either._
 import cats.syntax.semigroup._
@@ -22,11 +23,14 @@ final case class CheckF[E, A](func: A => Either[E, A]) {
 
 }
 
-sealed trait Check[E, A] {
-  import Check._
+sealed trait CheckS[E, A] {
+  import CheckS._
 
-  def and(that: Check[E, A]): Check[E, A] =
+  def and(that: CheckS[E, A]): CheckS[E, A] =
     And(this, that)
+
+  def or(that: CheckS[E, A]): CheckS[E, A] =
+    Or(this, that)
 
   def apply(a: A)(implicit s: Semigroup[E]): Validated[E, A] =
     this match {
@@ -35,11 +39,23 @@ sealed trait Check[E, A] {
 
       case And(left, right) =>
         (left(a), right(a)).mapN((_, _) => a)
+
+      case Or(left, right) =>
+        left(a) match {
+          case Valid(a) => Valid(a)
+          case Invalid(e1) =>
+            right(a) match {
+              case Valid(a)    => Valid(a)
+              case Invalid(e2) => Invalid(e1 |+| e2)
+            }
+        }
     }
 }
 
-object Check {
-  final case class And[E, A](left: Check[E, A], right: Check[E, A]) extends Check[E, A]
+object CheckS {
+  final case class And[E, A](left: CheckS[E, A], right: CheckS[E, A]) extends CheckS[E, A]
 
-  final case class Pure[E, A](func: A => Validated[E, A]) extends Check[E, A]
+  final case class Or[E, A](left: CheckS[E, A], right: CheckS[E, A]) extends CheckS[E, A]
+
+  final case class Pure[E, A](func: A => Validated[E, A]) extends CheckS[E, A]
 }
